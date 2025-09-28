@@ -1,0 +1,6 @@
+langchain
+langchain-google-genai
+lxml
+faiss-cpu
+python-dotenv
+beautifulsoup4
