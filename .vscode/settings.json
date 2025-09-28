@@ -1,0 +1,8 @@
+{
+    "files.exclude": {
+        "**/data/.xml": true
+    },
+    "search.exclude": {
+        ".venv": true
+    }
+}

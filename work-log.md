@@ -36,12 +36,6 @@
     - 根據 `plan.md` 的「第一階段：資料載入與處理」，建立了一份詳細的待辦清單。
     - 將此清單儲存為 `task.md` 檔案，其中包含從尋找檔案、解析 XML、清理內容到文件分割的具體子任務。
 
-### 目前狀態
-
-專案基礎設定已全部完成。`task.md` 提供了第一階段開發的清晰路線圖，開發者可直接依此開始編寫程式碼。專案已準備好交接。
-
-## 2025-09-28 (續)
-
 ### 5. 完成第一階段：資料載入與處理
 
 - **目標**：根據 `task.md` 的指引，完成 `main.py` 中資料處理的完整流程。
@@ -50,16 +44,26 @@
     - **實作 XML 解析**：加入 `load_and_parse_xml` 函式，使用 `lxml.etree.iterparse` 高效解析 MediaWiki XML。
     - **實作內容清理**：加入 `clean_mediawiki_text` 函式，整合 `BeautifulSoup` 和正則表達式，移除 HTML 標籤和 Wiki 標記。
     - **實作文件分割**：加入 `split_documents` 函式，使用 `langchain` 的 `RecursiveCharacterTextSplitter` 將長文本切分為適合處理的區塊 (chunks)。
+
+## 2025-09-28 (續)
+
+### 6. 程式碼重構與單元測試
+
+- **目標**：將 `main.py` 重構為物件導向的結構，並為其建立完整的單元測試。
+- **操作**：
+    - 將 `main.py` 中的函式重構為 `WikiDataProcessor` 類別。
+    - 將 `print` 呼叫替換為 `logging` 模組。
+    - 使用 `pathlib` 取代 `os.path`。
+    - 更新 `tests/test_main.py` 以反映新的類別結構，並加入整合測試。
 - **遇到的問題與解決方案**：
-    1.  **問題**：首次執行 `main.py` 時，出現 `ModuleNotFoundError: No module named 'lxml'`。
-        - **分析**：雖然 `requirements.txt` 中已包含 `lxml`，但 `run_shell_command` 預設可能未使用專案的虛擬環境 (`.venv`)。
-        - **解決方案**：明確使用虛擬環境中的 Python 解譯器來執行腳本，即改用命令 `.venv/bin/python3 main.py`，問題解決。
-    2.  **問題**：腳本執行成功，但 XML 解析結果為 0 個頁面。
-        - **分析**：懷疑是 XML 的命名空間 (namespace) 不符。程式碼中硬編碼為 `export-0.10`，但實際檔案可能不同。
-        - **解決方案**：使用 `head` 命令查看 `.xml` 檔案的開頭，確認命名空間為 `export-0.11`。將程式碼中的命名空間更新後，成功解析出 1025 個頁面。
-    3.  **問題**：腳本執行時 `BeautifulSoup` 產生 `XMLParsedAsHTMLWarning` 警告。
-        - **分析**：這是因為 MediaWiki 的文本內容被當作 HTML 解析，而 `task.md` 中也指明使用 `html.parser`。雖然不影響結果，但為了輸出整潔，應當處理。
-        - **解決方案**：根據警告提示，改用 `lxml` 作為 `BeautifulSoup` 的解析器，並加入程式碼以忽略此類警告，使執行輸出更乾淨。
-- **目前狀態**：
-    - `main.py` 現在具備完整的資料載入、解析、清理和分割功能，第一階段開發目標已全部達成。
-    - `task.md` 中的所有項目都已完成並勾選。
+    1.  **問題**：在重構後，單元測試持續失敗，主要集中在 `clean_mediawiki_text`（正規表示式處理）和 `load_and_parse_xml`（`lxml` 的模擬）中。
+    2.  **嘗試的解決方案 (皆失敗)**：
+        - **正規表示式**：多次嘗試修正 wiki 連結的正規表示式 `r'\[\[([^\]|]+)\]\]'`，但始終在 `pytest` 環境中觸發 `re.error: unbalanced parenthesis` 或 `unterminated character set` 錯誤。這似乎是一個棘手的字串轉義問題，在工具的 `write_file` 呼叫中，字串的處理方式與預期不符。
+        - **lxml 模擬**：嘗試使用 `mock.return_value` 和 `mock.side_effect` 等多種方式來模擬 `etree.iterparse`，但都無法讓測試正確地從記憶體中的假 XML 資料產生迭代器，導致測試失敗（回傳 0 個頁面或無限遞迴）。
+        - **簡化策略**：嘗試將複雜的正規表示式拆分為多個簡單的表示式，並讓 XML 解析測試直接讀取暫存檔案而非模擬。此方法仍然觸發了相同的 `re.error`，顯示問題根源比想像的更深。
+
+### 目前狀態
+
+- **已完成**：`main.py` 的程式碼已重構為 `WikiDataProcessor` 類別。
+- **被阻擋**：`tests/test_main.py` 中的單元測試無法通過。最關鍵的阻礙是 `clean_mediawiki_text` 中的一個正規表示式在 `pytest` 中執行時會產生 `re.error`，儘管該表示式在語法上看起來是正確的。此問題已耗費大量時間仍無法解決。
+- **結論**：我無法在目前情況下修復此測試。需要對 Python `re` 模組的內部機制以及工具鏈的字串處理有更深入了解的專家介入。
