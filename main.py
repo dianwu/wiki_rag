@@ -93,7 +93,7 @@ class WikiDataProcessor:
         text = BeautifulSoup(raw_text, 'lxml').get_text()
         
         # Remove file and image links
-        text = re.sub(r'\[\[(?:File|Image|文件|圖片):.*?\].*?\]\]', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\[\[(?:File|Image|文件|圖片):[^\]]+\]\]', '', text, flags=re.IGNORECASE)
         # Remove templates
         text = re.sub(r'\{\{.*?\}\}', '', text, flags=re.DOTALL)
         # Remove bold and italic
@@ -103,12 +103,14 @@ class WikiDataProcessor:
         # Remove external links, keeping the text
         text = re.sub(r'\[http[^\s]*\s (.*?)(\\s.*?)?\]', r'\1', text)
         # Remove wiki links, keeping the alias if it exists
-        # text = re.sub(r'\[\[[^\\]|)*?(\\[^\\]+)\]\]', r'\1', text) # [[Link|Alias]] -> Alias
-        # text = re.sub(r'\[\[([^\\]|)*?\]\]', r'\1', text) # [[Page]] -> Page
         text = re.sub(r'\[\[(?:[^\]|]*\|)?([^\]]+)\]\]', r'\1', text)
         # Clean up leftover whitespace
         text = '\n'.join([line.strip() for line in text.split('\n') if line.strip()])
-        
+        # Normalize spaces within each line (保留換行)
+        text = '\n'.join(re.sub(r' +', ' ', line) for line in text.splitlines())
+        # Remove empty lines and trim
+        text = '\n'.join(line.strip() for line in text.splitlines() if line.strip())
+
         return text
 
     def split_documents(self, pages: List[Dict[str, str]]) -> List[Document]:

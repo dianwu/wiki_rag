@@ -1,0 +1,17 @@
+# MediaWiki RAG 專案
+
+本專案使用 LangChain 實作一個 Retrieval-Augmented Generation (RAG) 系統，能以 MediaWiki 導出的 XML 檔案作為知識庫，並透過 Google Gemini 大型語言模型回答相關問題。
+
+## 專案架構
+
+```
+.
+├── data/                  # 存放 MediaWiki XML 檔案
+├── .gitignore             # Git 忽略設定
+├── main.py                # 主程式進入點
+├── plan.md                # 開發計畫
+├── readme.md              # 專案說明
+└── requirements.txt       # Python 套件依賴
+```
+
+在執行任務後，如果需要就把任務執行過程更新到 work-log.md 中。
