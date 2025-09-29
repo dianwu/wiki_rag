@@ -11,7 +11,9 @@
 
 ## 第二階段：向量化與儲存
 
-1.  **選擇 Embedding 模型**：使用 `langchain-google-genai` 的 `OpenAIEmbeddings` 將文本段落轉換為向量。
+1.  **選擇 Embedding 模型**:
+    *   **本地端 (預設)**: 使用 `HuggingFaceEmbeddings` (例如 `all-mpnet-base-v2` 模型) 在本地進行向量化。此方式免費且無需 API 金鑰。
+    *   **線上 API (可選)**: 亦可輕易切換回使用如 `GoogleGenerativeAIEmbeddings` 的線上服務，但需要有效的 API 金鑰且可能產生費用。
 2.  **建立向量資料庫**：使用 `Chroma` 作為本地向量資料庫，它易於設置和使用。
 3.  **儲存向量**：將所有文本段落的向量儲存到 Chroma 資料庫中，並將其持久化到本地磁碟，以便重複使用。
 

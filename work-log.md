@@ -1,3 +1,21 @@
+## 2025-09-29
+
+### 11. 更換 Embedding 模型：Google API -> 本地端 Sentence Transformers
+
+- **動機**: `GoogleGenerativeAIEmbeddings` ("models/gemini-embedding-001") 為付費服務，且目前的 API Key 遇到 Quota 問題。為了降低成本並移除外部 API 依賴，決定更換為免費的本地端開源模型。
+- **討論與決策**:
+    - 探討了多個免費替代方案，包括 `all-MiniLM-L6-v2`, `multi-qa-mpnet-base-dot-v1`, 和 `paraphrase-multilingual-mpnet-base-v2`。
+    - 使用者最終選擇了 `all-mpnet-base-v2`，因其在效能和品質之間取得了良好的平衡。
+    - 確認了使用 `sentence-transformers` 函式庫的模型會在本地端執行，僅在首次使用時需要網路下載模型。
+- **操作**:
+    - **更新 `requirements.txt`**:
+        - 移除了 `langchain-google-genai`。
+        - 新增了 `sentence-transformers` 和 `langchain-community`。
+    - **更新 `main.py`**:
+        - 將 `GoogleGenerativeAIEmbeddings` 的 import 替換為 `langchain_community.embeddings.HuggingFaceEmbeddings`。
+        - 修改 embedding 初始化邏輯，改為載入 `HuggingFaceEmbeddings(model_name="all-mpnet-base-v2")`，並移除 Google API Key 相關的錯誤處理。
+- **結論**: 專案現在使用 `all-mpnet-base-v2` 模型在本地進行 embedding，移除了對付費 Google API 的依賴，解決了 API Quota 問題。
+
 # 工作日誌 (Work Log)
 
 ## 2025-09-28 (續)
@@ -82,7 +100,27 @@
     - 所有 5 個測試均成功通過。
 - **結論**：測試問題已解決，專案不再被阻擋。
 
+### 9. 實作向量化與儲存 (Chroma)
+
+- **目標**: 根據 `task.md` 推進到第二階段，完成文本向量化與 Chroma 資料庫的建立。
+- **操作**:
+    - **環境設定**: 在 `main.py` 中加入 `dotenv`, `GoogleGenerativeAIEmbeddings`, 和 `Chroma` 的匯入。
+    - **建立向量資料庫**: 實作 `create_vector_store` 函式，使用 `Chroma.from_documents` 來建立並持久化向量資料庫。
+    - **整合儲存與載入邏輯**: 在 `main` 函式中，加入檢查 `chroma_db` 目錄是否存在的邏輯。如果存在則載入，否則執行資料處理並建立新的資料庫。
+    - **更新依賴**: 將 `requirements.txt` 中的 `faiss-cpu` 替換為 `chroma` 和 `langchain-community`，並重新安裝依賴。
+
+### 10. 處理 Google API Quota 問題
+
+- **問題描述**: 執行 `main.py` 時，`GoogleGenerativeAIEmbeddings` 觸發 `ResourceExhausted: 429 You exceeded your current quota` 錯誤，即使在處理少量文件時也是如此。錯誤訊息顯示 `limit: 0`，暗示 API 金鑰的免費層級可能沒有 `embed_content` 的使用權限。
+- **嘗試的解決方案**:
+    1.  **限制資料量**: 修改 `main.py`，將處理的頁面數量限制為 10 頁。**結果**: 錯誤依舊存在，證明問題不在於請求量的大小，而在於權限本身。
+    2.  **處理庫棄用警告**: `Chroma` 的使用方式已過時。將 `langchain-community` 和 `chromadb` 替換為 `langchain-chroma`，並更新 `main.py` 中的 import 語句。**結果**: 雖然代碼更現代化，但 API Quota 錯誤仍然存在。
+- **結論**: 問題根源極可能在於 Google Cloud 專案的設定或 API 金鑰的權限，而非程式碼本身。已建議使用者檢查 Google Cloud Console 中的相關設定。
+- **後續動作**: 已將 `main.py` 中限制資料量的臨時程式碼還原，以保持程式碼的整潔。專案目前因外部 API 權限問題而受阻。
+
 ### 目前狀態
 
-- **已完成**：`main.py` 的程式碼已重構為 `WikiDataProcessor` 類別，並且 `tests/test_main.py` 中的所有單元測試都已成功通過。
-- **下一步**：可以安全地進入下一個開發階段：向量化與儲存。
+- **已完成**：`main.py` 的向量化儲存與載入邏輯已根據 `task.md` 完成。
+- **已完成**：專案依賴已更新至最新的 `langchain-chroma`。
+- **受阻**: 專案的執行被 Google API 的 `ResourceExhausted` 錯誤阻擋。在使用者解決 API 金鑰權限問題之前，無法成功建立向量資料庫。
+- **下一步**：等待使用者確認 Google Cloud API 權限問題已解決，然後重試執行 `main.py`。

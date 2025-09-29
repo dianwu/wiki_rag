@@ -1,7 +1,8 @@
 langchain
-langchain-google-genai
 lxml
-faiss-cpu
 python-dotenv
 beautifulsoup4
 pytest
+langchain-chroma
+sentence-transformers
+langchain-community

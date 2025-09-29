@@ -6,9 +6,15 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning, MarkupResemblesLocatorWarning
+from dotenv import load_dotenv
 from lxml import etree
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+
+# --- Environment Setup ---
+load_dotenv()
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -172,18 +178,64 @@ class WikiDataProcessor:
         return documents
 
 
+def create_vector_store(documents: List[Document], embeddings, persist_directory: str) -> Chroma:
+    """
+    Creates and persists a Chroma vector store from the given documents.
+    """
+    logging.info(f"Creating vector store at '{persist_directory}'...")
+    vector_db = Chroma.from_documents(
+        documents=documents,
+        embedding=embeddings,
+        persist_directory=persist_directory
+    )
+    logging.info("Vector store created successfully.")
+    return vector_db
+
+
 def main():
     """
-    Main function to run the data processing.
+    Main function to run the data processing and vectorization pipeline.
     """
-    processor = WikiDataProcessor(data_dir="data")
-    processed_documents = processor.run()
+    # --- Configuration ---
+    DATA_DIR = "data"
+    PERSIST_DIR = "chroma_db"
     
-    if processed_documents:
-        logging.info(f"\nSuccessfully processed the data and obtained {len(processed_documents)} documents.")
-        # The subsequent phases (vectorization, RAG chain) will start here.
+    # --- Initialize Embeddings ---
+    try:
+        # Use a local, open-source embedding model.
+        # This model will be downloaded automatically on the first run.
+        embeddings = HuggingFaceEmbeddings(
+            model_name="all-mpnet-base-v2",
+            model_kwargs={'device': 'cpu'} # Use 'cpu' to run on CPU
+        )
+        logging.info("HuggingFace embeddings initialized successfully with model 'all-mpnet-base-v2'.")
+    except Exception as e:
+        logging.error(f"Failed to initialize HuggingFace embeddings: {e}")
+        return
+
+    # --- Vector Store Handling ---
+    vector_db: Optional[Chroma] = None
+    if Path(PERSIST_DIR).exists():
+        logging.info(f"Loading existing vector store from '{PERSIST_DIR}'...")
+        vector_db = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
+        logging.info("Vector store loaded successfully.")
     else:
-        logging.warning("\nData processing failed or produced no documents.")
+        logging.info("No existing vector store found. Starting data processing pipeline...")
+        processor = WikiDataProcessor(data_dir=DATA_DIR)
+        processed_documents = processor.run()
+        
+        if processed_documents:
+            logging.info(f"Data processing successful. Obtained {len(processed_documents)} documents.")
+            vector_db = create_vector_store(processed_documents, embeddings, PERSIST_DIR)
+        else:
+            logging.warning("Data processing failed or produced no documents. Vector store not created.")
+
+    if vector_db:
+        logging.info("\n--- Vectorization complete! ---")
+        logging.info(f"Vector DB is ready. Total documents in store: {vector_db._collection.count()}")
+        # Next step: Implement the RAG chain using this vector_db.
+    else:
+        logging.warning("\nVectorization failed. Could not create or load the vector store.")
 
 
 if __name__ == "__main__":
