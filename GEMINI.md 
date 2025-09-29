@@ -15,3 +15,5 @@
 ```
 
 在執行任務後，如果需要就把任務執行過程更新到 work-log.md 中。
+
+如果有遇到要執行 python 相關的指令，請先進入 venv 虛擬環境，指令 `soruce ./.venv/bin/activate`

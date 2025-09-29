@@ -24,7 +24,7 @@
     *   **上下文 (Context)**：從檢索器返回的相關文本段落。
     *   **問題 (Question)**：使用者的原始問題。
     *   **指令 (Instruction)**：指示大型語言模型 (LLM) 根據提供的上下文來回答問題。
-3.  **建立 RAG 鏈**：使用 LangChain Expression Language (LCEL) 將檢索器、提示模板和大型語言模型（如 OpenAI 的 GPT）串聯起來，形成一個完整的 RAG 鏈。
+3.  **建立 RAG 鏈**：使用 LangChain Expression Language (LCEL) 將檢索器、提示模板和大型語言模型（如 Google Gemini）串聯起來，形成一個完整的 RAG 鏈。
 
 ## 第四階段：使用者介面與互動
 
@@ -32,4 +32,13 @@
     *   初始化 RAG 鏈。
     *   提供一個簡單的命令列介面 (CLI)，讓使用者可以輸入問題。
     *   接收問題，呼叫 RAG 鏈，並將生成的答案輸出到控制台。
-2.  **（可選）Web 介面**：未來可考慮使用 Streamlit 或 FastAPI 建立一個簡單的 Web 應用，提供更友好的互動體驗。
+
+## 第五階段：MCP Server 實作
+
+1.  **目標**：將檢索與問答邏輯封裝成一個獨立的 API 服務 (MCP Server)，使其標準化並易於被其他應用程式呼叫。
+2.  **框架選擇**：使用輕量級的 Python API 框架，如 `FastAPI` 或 `Flask`。
+3.  **功能設計**：
+    *   提供 `/query` 端點，接收 `question` 參數。
+    *   允許透過 API 參數自訂檢索文件的數量 (`k`)。
+    *   提供分頁查詢功能 (`page`, `per_page`) 以便瀏覽大量檢索結果。
+4.  **重構**：將 `main.py` 中的核心邏輯重構為可被 API 呼叫的模組。

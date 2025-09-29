@@ -7,7 +7,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_community.llms import Ollama
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -25,8 +25,6 @@ def main():
     """
     # --- Configuration ---
     PERSIST_DIR = "chroma_db"
-    OLLAMA_MODEL = "wangshenzhi/gemma2-9b-chinese-chat"
-
     # --- Check for Vector Store ---
     if not Path(PERSIST_DIR).exists():
         logging.error(f"Vector store not found at '{PERSIST_DIR}'.")
@@ -76,23 +74,19 @@ def main():
         return
 
     # --- RAG Chain Implementation ---
-    logging.info(f"--- Initializing RAG Chain with Ollama model: {OLLAMA_MODEL} ---")
-
     # 1. Create Retriever
     retriever = vector_db.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 5} # Retrieve top 5 most relevant chunks
+        search_kwargs={"k": 2} # Retrieve top 2 most relevant chunks
     )
     logging.info("Retriever created successfully.")
 
     # 2. Initialize LLM
     try:
-        llm = Ollama(model=OLLAMA_MODEL)
-        logging.info("Ollama LLM initialized successfully.")
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
+        logging.info("Google Gemini LLM initialized successfully.")
     except Exception as e:
-        logging.error(f"Failed to initialize Ollama. Is Ollama running? Error: {e}")
-        logging.error("Please ensure the Ollama application is running and the specified model is available.")
-        logging.error(f"You can pull the model with: ollama pull {OLLAMA_MODEL}")
+        logging.error(f"Failed to initialize Google Gemini. Is the API key configured correctly? Error: {e}")
         return
 
     # 3. Create Prompt Template
@@ -127,7 +121,7 @@ def main():
 
     # --- Interactive Query Loop ---
     print("\n--- QNAP Wiki RAG 系統已就緒 ---")
-    print(f"模型: {OLLAMA_MODEL}")
+    print("模型: Google Gemini")
     print("現在您可以開始提問了 (輸入 'exit' 或 'quit' 來結束程式)。\n")
 
     while True:
@@ -140,8 +134,23 @@ def main():
                 continue
 
             print("\n正在思考中...")
-            
+
+            # --- Verification Step: Retrieve and print context ---
+            print("--- [驗證] 正在檢索相關資料... ---")
+            retrieved_docs = retriever.invoke(question)
+            if not retrieved_docs:
+                print("--- [驗證] 找不到相關資料。 ---")
+            else:
+                print(f"--- [驗證] 找到 {len(retrieved_docs)} 筆相關資料: ---")
+                for i, doc in enumerate(retrieved_docs):
+                    print(f"  [資料 {i+1}]")
+                    print(f"    來源: {doc.metadata.get('source', 'N/A')}")
+                    print(f"    內容總長度: {doc.page_content.__len__()}...") # Print first 150 chars
+                    print(f"    內容: {doc.page_content[:150]}...") # Print first 150 chars
+                print("------------------------------------")
+
             # Stream the response
+            print("\n--- [回答] ---")
             full_response = ""
             for chunk in rag_chain.stream(question):
                 print(chunk, end="", flush=True)
@@ -152,8 +161,9 @@ def main():
             print("\n偵測到中斷指令，正在關閉程式...")
             break
         except Exception as e:
-            logging.error(f"\nAn error occurred during query processing: {e}")
-            break
+            logging.error(f"An error occurred during query processing: {e}")
+            print(f"\n處理您的問題時發生錯誤，請稍後再試或換個問題。 錯誤訊息: {e}")
+            continue
 
 
 if __name__ == "__main__":
