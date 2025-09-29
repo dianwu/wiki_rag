@@ -200,15 +200,35 @@ def main():
     DATA_DIR = "data"
     PERSIST_DIR = "chroma_db"
     
+    # --- Determine Embedding Device ---
+    device_setting = os.getenv("EMBEDDING_DEVICE", "auto").lower()
+    device = "cpu"  # Default to CPU
+
+    if device_setting == "auto":
+        try:
+            import torch
+            if torch.cuda.is_available():
+                device = "cuda"
+                logging.info("CUDA is available. Automatically selecting GPU for embeddings.")
+            else:
+                logging.info("CUDA not available. Automatically selecting CPU for embeddings.")
+        except ImportError:
+            logging.warning("PyTorch is not installed, defaulting to CPU. For GPU support, please install PyTorch with CUDA.")
+    elif device_setting in ["cuda", "gpu"]:
+        device = "cuda"
+        logging.info("Forcing GPU for embeddings based on EMBEDDING_DEVICE setting.")
+    else:  # 'cpu' or any other value
+        logging.info("Forcing CPU for embeddings based on EMBEDDING_DEVICE setting.")
+
     # --- Initialize Embeddings ---
     try:
         # Use a local, open-source embedding model.
         # This model will be downloaded automatically on the first run.
         embeddings = HuggingFaceEmbeddings(
             model_name="all-mpnet-base-v2",
-            model_kwargs={'device': 'cpu'} # Use 'cpu' to run on CPU
+            model_kwargs={'device': device}
         )
-        logging.info("HuggingFace embeddings initialized successfully with model 'all-mpnet-base-v2'.")
+        logging.info(f"HuggingFace embeddings initialized successfully on device '{device}' with model 'all-mpnet-base-v2'.")
     except Exception as e:
         logging.error(f"Failed to initialize HuggingFace embeddings: {e}")
         return

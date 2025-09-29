@@ -1,5 +1,36 @@
 ## 2025-09-29
 
+### 14. 增強裝置設定的靈活性
+
+- **動機**: 取代原先硬編碼的裝置設定 (`cuda`)，提供更靈活、可攜的設定方式。
+- **操作**:
+    - **更新 `main.py`**:
+        - 實作了新的邏輯，在程式啟動時讀取名為 `EMBEDDING_DEVICE` 的環境變數。
+        - 支援 `auto` (預設), `cpu`, `cuda`/`gpu` 三種模式。
+        - 在 `auto` 模式下，程式會使用 `torch.cuda.is_available()` 自動偵測並選用最適合的裝置。
+    - **更新 `requirements.txt`**:
+        - 明確加入 `torch` 套件，以確保 CUDA 偵測功能正常運作。
+    - **更新 `.env.example`**:
+        - 新增 `EMBEDDING_DEVICE=auto` 變數，作為設定範例。
+- **結論**: 應用程式現在可以自動適應不同的硬體環境，同時允許使用者透過環境變數強制指定運算裝置，大幅提升了可用性與便利性。
+
+### 13. 效能標竿測試：GPU 向量化
+
+- **硬體**: NVIDIA GeForce GTX 1650 (4GB VRAM)
+- **模型**: `all-mpnet-base-v2`
+- **執行結果**:
+    - **輸入資料**: 1.2 GB 的 MediaWiki XML 檔案。
+    - **處理時間**: 約 34 分鐘。
+    - **輸出資料庫**: 產生的 ChromaDB 大小為 104 MB。
+- **結論**: 在此硬體配置下，使用 GPU 進行本地端 embedding 的效能基準已建立。
+
+### 12. 啟用 GPU 進行向量化
+
+- **動機**: 為了加速 `sentence-transformers` 模型的向量化過程，需要將計算從 CPU 切換到 GPU。
+- **操作**:
+    - **更新 `main.py`**: 在 `HuggingFaceEmbeddings` 的初始化過程中，將 `model_kwargs` 的 `device` 參數從 `'cpu'` 修改為 `'cuda'`。
+- **結論**: 程式現在被設定為使用 GPU 進行 embedding 計算，預期能大幅提升處理大量文件時的效能。此變更需要環境支援 CUDA。
+
 ### 11. 更換 Embedding 模型：Google API -> 本地端 Sentence Transformers
 
 - **動機**: `GoogleGenerativeAIEmbeddings` ("models/gemini-embedding-001") 為付費服務，且目前的 API Key 遇到 Quota 問題。為了降低成本並移除外部 API 依賴，決定更換為免費的本地端開源模型。
