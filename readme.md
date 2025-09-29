@@ -10,6 +10,8 @@
 ├── chroma_db/             # 持久化的向量資料庫
 ├── .gitignore             # Git 忽略設定
 ├── main.py                # 主程式進入點
+├── ingest.py              # 資料載入與處理腳本
+├── tests/                 # 單元與整合測試
 ├── plan.md                # 開發計畫
 ├── readme.md              # 專案說明
 └── requirements.txt       # Python 套件依賴
@@ -42,17 +44,41 @@
 
 ## 如何執行
 
+### 1. 資料導入 (Ingestion)
+
+此步驟會處理 `data/` 目錄中的 XML 檔案，將其轉換為向量並儲存在 `chroma_db` 中。
+
 1.  將您的 MediaWiki XML 匯出檔案放入 `data/` 目錄下。
-2.  執行主程式：
+2.  執行導入腳本：
 
     ```bash
-    python3 main.py
+    python3 ingest.py
     ```
 
     **注意**：
     *   首次執行時，程式會自動從 Hugging Face Hub 下載所需的 Embedding 模型 (例如 `all-mpnet-base-v2`)，這可能需要幾分鐘時間。
-    *   下載模型後，程式會處理 `data/` 中的 XML 檔案，並建立一個名為 `chroma_db` 的本地向量資料庫。此過程也可能需要一些時間。
-    *   後續執行將會直接載入已快取的模型和 `chroma_db` 資料庫。
+    *   下載模型後，程式會處理 XML 檔案並建立 `chroma_db` 向量資料庫。此過程也可能需要一些時間，取決於您的資料量和硬體效能。
+    *   如果 `chroma_db` 目錄已存在，腳本將會提示並終止，以避免覆蓋現有資料。如需重新導入，請先手動刪除 `chroma_db` 目錄。
+
+### 2. 執行問答系統
+
+資料導入完成後，您可以啟動主程式來進行問答。
+
+```bash
+python3 main.py
+```
+
+程式啟動後，會載入本地的向量資料庫和 LLM。您可以在命令列中輸入問題，程式會根據知識庫內容生成答案。
+
+## 測試
+
+本專案包含一套測試，以確保資料處理邏輯的正確性。若要執行測試，請在專案根目錄下執行：
+
+```bash
+.venv/bin/python -m pytest
+```
+
+所有測試都應該會通過，以確保系統的穩定性。
 
 ## Embedding 模型設定
 
@@ -60,17 +86,17 @@
 
 ### 使用本地端模型 (預設)
 
-目前的 `main.py` 設定為使用 `HuggingFaceEmbeddings`。
+目前的 `ingest.py` 設定為使用 `HuggingFaceEmbeddings`。
 
 ```python
-# in main.py
+# in ingest.py
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # ...
 
 embeddings = HuggingFaceEmbeddings(
     model_name="all-mpnet-base-v2",
-    model_kwargs={'device': 'cpu'}
+    model_kwargs={'device': device}
 )
 ```
 
@@ -79,7 +105,7 @@ embeddings = HuggingFaceEmbeddings(
 
 ### 切換為線上 API 模型 (例如 Google)
 
-如果您希望使用 Google 的線上 Embedding 服務，可以修改 `main.py`。
+如果您希望使用 Google 的線上 Embedding 服務，可以修改 `ingest.py`。
 
 1.  **安裝對應套件**:
     ```bash
@@ -87,10 +113,10 @@ embeddings = HuggingFaceEmbeddings(
     ```
 
 2.  **修改程式碼**:
-    在 `main.py` 中，註解掉 `HuggingFaceEmbeddings` 的部分，並換成 `GoogleGenerativeAIEmbeddings`。
+    在 `ingest.py` 中，註解掉 `HuggingFaceEmbeddings` 的部分，並換成 `GoogleGenerativeAIEmbeddings`。
 
     ```python
-    # in main.py
+    # in ingest.py
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
     # from langchain_community.embeddings import HuggingFaceEmbeddings # 註解掉
 

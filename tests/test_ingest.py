@@ -4,10 +4,10 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-# Make sure main.py is in the path
+# Make sure ingest.py is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import WikiDataProcessor
+from ingest import WikiDataProcessor
 
 # --- Mock Data ---
 MOCK_WIKI_XML = (
@@ -29,7 +29,7 @@ MOCK_WIKI_XML = (
     '  <page>'
     '    <title>Test Page 2</title>'
     '    <revision>'
-    '      <text xml:space="preserve">Some more text here. &lt;br /&gt; with a line break.</text>'
+    '      <text xml:space="preserve">Some more text here. <br /> with a line break.</text>'
     '    </revision>'
     '  </page>'
     '</mediawiki>'
@@ -85,10 +85,10 @@ def test_split_documents(processor):
     assert len(doc_page_2) == 1
     assert doc_page_2[0].page_content == 'This is the second sentence.'
 
-@patch('main.Path.iterdir')
-@patch('main.Path.is_file')
-@patch('main.Path.is_dir')
-@patch('main.Path.exists')
+@patch('ingest.Path.iterdir')
+@patch('ingest.Path.is_file')
+@patch('ingest.Path.is_dir')
+@patch('ingest.Path.exists')
 def test_find_xml_file(mock_exists, mock_isdir, mock_isfile, mock_iterdir, processor):
     """Tests the XML file finding logic using pathlib."""
     mock_exists.return_value = True

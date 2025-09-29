@@ -1,3 +1,46 @@
+## 2025-09-29 (續)
+
+### 16. 修復 `pytest` 測試失敗問題
+
+- **動機**: 在將資料處理邏輯拆分至 `ingest.py` 並為其建立測試後，`pytest` 中出現了一個持續的測試失敗，需要解決以確保程式碼品質。
+- **問題分析**:
+    - 執行 `./.venv/bin/python -m pytest` 後，發現 `tests/test_ingest.py` 中的 `test_load_and_parse_xml` 測試失敗。
+    - 錯誤為 `AssertionError: assert 'line break' in 'Some more text here. '`。
+    - 經追查，問題發生在 `ingest.py` 的 `load_and_parse_xml` 函式中。原本的程式碼 `text_elem.text` 在解析 XML 時，只能獲取元素的直接文本，無法讀取像 `<br />` 這樣的子標籤及其後的文本內容。
+- **操作**:
+    - **修改 `ingest.py`**:
+        - 將 `load_and_parse_xml` 函式中的文本提取邏輯從 `text_elem.text` 修改為 `"".join(text_elem.itertext())`。
+        - 這個變更確保了 lxml 解析器能夠遞迴地提取出一個元素及其所有子孫節點中的全部文本內容。
+    - **驗證修復**:
+        - 再次執行 `./.venv/bin/python -m pytest`。
+        - 所有 5 個測試（`5 passed`）全部成功通過。
+- **結論**: XML 解析的錯誤已成功修復，確保了資料載入的完整性。專案的測試套件現在是穩定的。
+
+### 15. 完成 RAG 鏈並整合 Ollama
+
+- **動機**: 根據計畫完成第三和第四階段，建立一個完整、可互動的 RAG 系統。
+- **操作**:
+    - **技術棧選擇**: 根據使用者偏好，選擇使用 `Ollama` 在本地端運行大型語言模型（LLM），以達成系統的完全本地化。
+    - **更新依賴**:
+        - 安裝 `langchain-ollama` 套件以支援 Ollama。
+        - 由於先前的 `pip freeze` 操作覆蓋了依賴，重新確認並安裝了被遺漏的 `beautifulsoup4` 套件。
+    - **實作 RAG 鏈**:
+        - 在 `main.py` 中，匯入 `Ollama`, `PromptTemplate`, `StrOutputParser`, 和 `RunnablePassthrough`。
+        - 實作了完整的 RAG 鏈，包含：
+            1.  從 ChromaDB 建立 `retriever`。
+            2.  初始化 `Ollama` LLM，並將模型設定為 `wangshenzhi/gemma2-9b-chinese-chat`。
+            3.  設計了一個詳細的繁體中文提示模板，指導模型如何根據上下文回答問題。
+            4.  使用 LangChain Expression Language (LCEL) 將所有元件串聯起來。
+    - **建立互動介面**:
+        - 在 `main.py` 中加入了一個 `while True` 迴圈，讓使用者可以在程式執行後，於命令列中持續輸入問題並獲得即時的串流回覆。
+        - 加入了 `exit` 和 `quit` 指令來正常關閉程式。
+- **遇到的問題與解決方案**:
+    1.  **問題**: 使用者回報 `ollama pull` 指令失敗，錯誤為 `file does not exist`。
+    2.  **解決方案**: 經查證，發現原先的 `aiyah/Gemma-2B-Traditional-Chinese-Taiwan-v0.1` 是 Hugging Face ID。推薦並更換為 Ollama 模型庫中專為中文優化的 `wangshenzhi/gemma2-9b-chinese-chat` 模型，解決了此問題。
+    3.  **問題**: 執行 `main.py` 時出現 `ModuleNotFoundError: No module named 'bs4'`。
+    4.  **解決方案**: 分析後發現，雖然 `requirements.txt` 中包含 `beautifulsoup4`，但執行時使用的是系統預設的 Python，而非專案的虛擬環境。透過使用虛擬環境的完整路徑 (`./.venv/bin/python3 main.py`) 成功執行程式，解決了環境問題。
+- **結論**: 專案的核心 RAG 功能已全部完成。系統現在能夠載入本地知識庫，並透過本地 LLM 提供問答服務。使用者可直接在終端機中與系統互動。
+
 ## 2025-09-29
 
 ### 14. 增強裝置設定的靈活性
