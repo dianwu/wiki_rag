@@ -1,35 +1,25 @@
-# 第五階段：MCP Server 實作
+# 第五階段：MCP Server 實作 (FastMCP)
 
 ## 目標
-將目前的檢索與問答邏輯封裝成一個獨立的 API 服務 (MCP Server)，使其標準化並易於被其他應用程式呼叫。
-
-## 主要功能
-- 接收使用者問題 (`question`)。
-- 允許呼叫端自訂檢索文件的數量 (`k`)。
-- 提供分頁查詢功能 (`page`, `per_page`) 以便瀏覽大量檢索結果。
-- 回傳結構化的 JSON 回應，包含答案與參考資料來源。
+將檢索邏輯封裝成一個符合模型內容協定 (MCP) 的伺服器，使其能被 AI Agent 或其他 MCP 客戶端標準化地呼叫。
 
 ## 任務清單
 
-### 1. 選擇 API 框架
-- [ ] 評估並選擇一個輕量級的 Python API 框架 (建議 `FastAPI` 或 `Flask`)。
-- [ ] 將選擇的框架新增至 `requirements.txt`。
+### 1. 框架選擇與安裝
+- [x] 決定使用 `FastMCP` 框架。
+- [x] 將 `fastmcp` 新增至 `requirements.txt` 並完成安裝。
 
-### 2. API 端點設計
-- [ ] 設計 `/query` 端點 (或類似名稱)。
-- [ ] 端點應接受 `POST` 請求，JSON body 包含 `question` (必填), `k` (選填, 預設為 2), `page` (選填, 預設為 1), `per_page` (選填, 預設為 5) 等參數。
-- [ ] 設計回應的 JSON 格式，應包含 `answer` (模型生成的答案), `source_documents` (引用的文件列表，包含元數據和內容)。
+### 2. 伺服器實作
+- [x] 建立一個新的伺服器檔案 `fastmcp_server.py`。
+- [x] 在伺服器中初始化 `RAGSystem`。
 
-### 3. 重構現有邏輯
-- [ ] 將 `main.py` 中的 RAG 鏈、Retriever、LLM 初始化等邏輯，重構為可被 API 端點呼叫的模組或類別。
-- [ ] 確保資料庫連線、模型載入等只在服務啟動時執行一次，而不是每次 API 呼叫都重新載入。
+### 3. Tool 功能設計與重構
+- [x] 將 `rag_logic.py` 中的文件檢索功能，封裝成一個名為 `retrieve_wiki_documents` 的 FastMCP `tool`。
+- [x] `tool` 應支援 `question` 和 `k` 參數。
+- [x] `tool` 的回傳值應為包含檢索結果的 JSON 字串。
 
-### 4. 實作 API 服務
-- [ ] 建立一個新的 Python 檔案 (例如 `server.py`)。
-- [ ] 使用選擇的框架 (FastAPI/Flask) 建立 Web Server。
-- [ ] 實作 `/query` 端點，串接重構後的 RAG 邏輯。
-- [ ] 加入錯誤處理機制 (例如，當找不到文件時的回應)。
-
-### 5. 文件與測試
-- [ ] 更新 `readme.md`，說明如何啟動新的 API 服務以及如何呼叫 API。
-- [ ] (選做) 為新的 API 端點編寫單元測試或整合測試。
+### 4. 文件更新
+- [x] 更新 `readme.md`，說明如何啟動和使用新的 FastMCP 伺服器。
+- [x] 更新 `plan.md`，將第五階段的計畫同步為 FastMCP 架構。
+- [x] 更新 `task.md` (本檔案) 以反映當前任務狀態。
+- [x] 清理 `work-log.md` 中與 FastAPI 相關的舊紀錄。

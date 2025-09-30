@@ -1,5 +1,7 @@
 # MediaWiki RAG 專案
 
+> **Note:** 本專案主要由 Google Gemini Code Assist 開發與維護。
+
 本專案使用 LangChain 實作一個 Retrieval-Augmented Generation (RAG) 系統，能以 MediaWiki 導出的 XML 檔案作為知識庫。預設情況下，它使用開源的 Sentence-Transformers 模型在**本地端**進行文本向量化，並可選擇性地設定使用 Google Gemini 大型語言模型進行最終的答案生成。
 
 ## 專案架構
@@ -16,6 +18,12 @@
 ├── readme.md              # 專案說明
 └── requirements.txt       # Python 套件依賴
 ```
+
+## 執行環境
+
+- **作業系統**: Ubuntu 22.04.2 LTS
+- **Python 版本**: 3.10.x
+- **開發工具**: 本專案由 Google Gemini Code Assist 輔助開發
 
 ## 環境設定
 
@@ -69,6 +77,52 @@ python3 main.py
 ```
 
 程式啟動後，會載入本地的向量資料庫和 LLM。您可以在命令列中輸入問題，程式會根據知識庫內容生成答案。
+
+### 3. 執行 MCP 伺服器 (FastMCP)
+
+本專案使用 FastMCP 提供一個符合模型內容協定 (Model Context Protocol) 的伺服器，讓 AI Agent 可以呼叫其提供的工具。
+
+```bash
+# 建議使用 fastmcp CLI 來啟動
+fastmcp run fastmcp_server.py
+```
+
+伺服器預設會運行在 `http://127.0.0.1:8000`，並使用 SSE (Server-Sent Events) 協定進行通訊。
+
+**客戶端如何呼叫**
+
+任何支援 MCP 的客戶端都可以與此伺服器互動。以下是一個使用 `fastmcp.Client` 的 Python 客戶端範例：
+
+```python
+import asyncio
+import json
+from fastmcp import Client
+
+async def main():
+    # 連接到本地運行的 FastMCP 伺服器
+    async with Client("http://127.0.0.1:8000") as client:
+        print("成功連接到 MCP 伺服器")
+        
+        # 準備要呼叫的工具參數
+        tool_params = {
+            "question": "wmi是什麼",
+            "k": 5
+        }
+        
+        print(f"正在呼叫工具: retrieve_wiki_documents")
+        
+        # 呼叫伺服器上名為 'retrieve_wiki_documents' 的工具
+        result = await client.call_tool("retrieve_wiki_documents", tool_params)
+        
+        # FastMCP 工具的回傳內容是字串，我們將其解析為 JSON
+        retrieved_docs = json.loads(result.content[0].text)
+        
+        print("--- 工具回傳結果 ---")
+        print(json.dumps(retrieved_docs, indent=2, ensure_ascii=False))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
 ## 測試
 
