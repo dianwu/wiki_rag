@@ -18,19 +18,18 @@ except Exception as e:
 
 # --- Create FastMCP Application ---
 mcp = FastMCP(
-    title="QNAP Wiki RAG MCP Server",
-    description="A FastMCP server providing document retrieval tools for the QNAP Wiki knowledge base.",
-    version="2.0.0"
+    name="QNAP Wiki RAG MCP Server",
+    instructions="A FastMCP server providing document retrieval tools for the QNAP Wiki knowledge base."
 )
 
 @mcp.tool
-def retrieve_wiki_documents(question: str, k: int = 10) -> str:
+def retrieve_wiki_documents(question: str, k: int = 5) -> str:
     """ 
     Retrieves relevant document chunks from the QNAP Wiki knowledge base based on a question.
     
     Args:
         question (str): The question to search for.
-        k (int): The maximum number of documents to retrieve.
+        k (int): The maximum number of documents to retrieve. A recommended starting value is 5. If the initial results are insufficient, increase this value to fetch more documents.
         
     Returns:
         str: A JSON string containing a list of retrieved documents, 

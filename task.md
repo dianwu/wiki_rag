@@ -1,25 +1,20 @@
-# 第五階段：MCP Server 實作 (FastMCP)
+# 下一步開發計畫
 
-## 目標
-將檢索邏輯封裝成一個符合模型內容協定 (MCP) 的伺服器，使其能被 AI Agent 或其他 MCP 客戶端標準化地呼叫。
+本文件概述了 QNAP Wiki RAG 專案的下一階段開發計畫。
 
-## 任務清單
+## 1. 優化 MediaWiki 資料擷取 (`ingest.py`)
 
-### 1. 框架選擇與安裝
-- [x] 決定使用 `FastMCP` 框架。
-- [x] 將 `fastmcp` 新增至 `requirements.txt` 並完成安裝。
+-   **解析表格資料:** 目前的腳本無法正確處理 MediaWiki 標記語言中的表格。需要更新解析邏輯，以正確提取和格式化表格內容，從而提高資料覆蓋率和檢索準確性。
+-   **提取頁面 URL:** 修改資料提取過程，以擷取每個 Wiki 頁面的來源 URL。此 URL 應儲存在向量的中繼資料（metadata）中，以便使用者可以從檢索結果直接存取原始來源頁面。
 
-### 2. 伺服器實作
-- [x] 建立一個新的伺服器檔案 `fastmcp_server.py`。
-- [x] 在伺服器中初始化 `RAGSystem`。
+## 2. 擴展資料來源支援
 
-### 3. Tool 功能設計與重構
-- [x] 將 `rag_logic.py` 中的文件檢索功能，封裝成一個名為 `retrieve_wiki_documents` 的 FastMCP `tool`。
-- [x] `tool` 應支援 `question` 和 `k` 參數。
-- [x] `tool` 的回傳值應為包含檢索結果的 JSON 字串。
+-   **新增 Jira 匯入功能:** 實作一個新的資料載入器，或修改現有載入器，以支援從 Jira 匯出的資料。這將涉及處理 Jira 資料的特定格式（例如 XML 或 JSON）。
 
-### 4. 文件更新
-- [x] 更新 `readme.md`，說明如何啟動和使用新的 FastMCP 伺服器。
-- [x] 更新 `plan.md`，將第五階段的計畫同步為 FastMCP 架構。
-- [x] 更新 `task.md` (本檔案) 以反映當前任務狀態。
-- [x] 清理 `work-log.md` 中與 FastAPI 相關的舊紀錄。
+## 3. 實現增量資料更新
+
+-   **支援持續索引:** 重構 `ingest.py` 腳本及其與 ChromaDB 的互動，以允許新增或更新現有文件，而無需完全重建資料庫。這對於維護最新的知識庫至關重要。
+
+## 4. 容器化
+
+-   **建立 Docker 環境:** 開發一個 `Dockerfile` 以及可能的 `docker-compose.yml`，以容器化整個應用程式堆疊（RAG 伺服器、資料庫等）。這將簡化部署過程並確保一致的執行環境。

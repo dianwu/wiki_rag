@@ -84,10 +84,10 @@ python3 main.py
 
 ```bash
 # 建議使用 fastmcp CLI 來啟動
-fastmcp run fastmcp_server.py
+fastmcp run fastmcp_server.py:mcp --transport sse --port 8000
 ```
 
-伺服器預設會運行在 `http://127.0.0.1:8000`，並使用 SSE (Server-Sent Events) 協定進行通訊。
+伺服器預設會運行在 `http://127.0.0.1:8000/sse`，並使用 SSE (Server-Sent Events) 協定進行通訊。
 
 **客戶端如何呼叫**
 
