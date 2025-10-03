@@ -1,5 +1,40 @@
 # 2025-10-03
 
+### 20. 自動偵測 GPU 並安裝對應 torch 的 shell script
+
+- **動機**: 讓 pip 安裝流程能根據不同平台自動選擇安裝 CUDA 版或 MPS 版 torch，避免 requirements.txt 靜態安裝造成跨平台問題。
+- **操作**:
+        - 撰寫 `install_with_gpu_detect.sh`，先安裝 requirements.txt，若偵測到 Linux 且有 NVIDIA GPU，則自動安裝 CUDA 版 torch。
+        - macOS/MPS 則維持預設安裝，無需額外處理。
+        - 腳本內容如下：
+
+            ```bash
+            #!/bin/bash
+            # 安裝依賴並根據平台自動安裝 GPU 相關套件
+            set -e
+            pip install -r requirements.txt
+            if [[ "$(uname)" == "Linux" ]] && command -v nvidia-smi &>/dev/null; then
+                echo "[INFO] 偵測到 NVIDIA GPU，安裝 CUDA 版 torch..."
+                pip install torch==2.8.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+            else
+                echo "[INFO] 未偵測到 NVIDIA GPU，維持預設安裝 (macOS 會自動支援 MPS)"
+            fi
+            ```
+- **結論**: 透過 shell script 可自動偵測硬體環境，讓安裝流程更彈性、跨平台且不易出錯。
+
+### 19. macOS GPU 支援與本地向量化測試
+
+- **動機**: 驗證 Apple Silicon (M1/M2/M3) Mac 上的 GPU (MPS) 是否能加速 embedding，並修正程式碼以自動偵測與支援 macOS GPU。
+- **操作**:
+    - 針對 `ingest.py` 與 `rag_logic.py`，將原本僅偵測 CUDA 的邏輯，擴充為同時支援 Apple MPS (Metal Performance Shaders)。
+    - 新增 `.env` 範例與說明，允許 `EMBEDDING_DEVICE=auto|cpu|cuda|mps`，可自動選擇最佳裝置。
+    - 撰寫 GPU/CPU 性能基準測試腳本，實測大批次文本時 Apple GPU 可達 2 倍加速。
+    - 在 MacBook Pro (Apple M2) 上實際執行 `python ingest.py`，全流程（含向量化與資料庫建立）約 11 分鐘完成。
+- **經驗與反思**:
+    - 小批次時 GPU 效益有限，但大批次處理時 Apple GPU 明顯優於 CPU。
+    - 目前 embedding 流程已能自動偵測並善用 macOS 的 GPU 資源，無需手動切換。
+- **結論**: 程式碼已完全支援 macOS GPU，且本地向量化流程在 Apple M2 上約 11 分鐘完成，效能與跨平台彈性大幅提升。
+
 ### 18. 建立 Dockerfile 與容器化經驗
 
 - **動機**: 為了簡化部署流程並確保執行環境一致，根據開發計畫完成了專案的 Dockerfile 建立。

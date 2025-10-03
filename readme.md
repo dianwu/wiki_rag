@@ -34,7 +34,20 @@
     source .venv/bin/activate
     ```
 
-2.  **安裝依賴套件**
+
+2.  **安裝依賴套件（自動偵測 GPU 版本建議）**
+
+    建議使用專案內的 shell script，可自動偵測平台並安裝對應的 torch 版本：
+
+    ```bash
+    bash install_with_gpu_detect.sh
+    ```
+
+    - macOS 會自動安裝支援 MPS 的 torch
+    - Linux 若偵測到 NVIDIA GPU，會自動安裝 CUDA 版 torch
+    - 其他平台則維持預設安裝
+
+    若只需安裝通用依賴，也可執行：
 
     ```bash
     pip install -r requirements.txt

@@ -209,14 +209,41 @@ def main():
             import torch
             if torch.cuda.is_available():
                 device = "cuda"
-                logging.info("CUDA is available. Automatically selecting GPU for embeddings.")
+                logging.info("CUDA is available. Automatically selecting NVIDIA GPU for embeddings.")
+            elif torch.backends.mps.is_available():
+                device = "mps"
+                logging.info("MPS is available. Automatically selecting Apple GPU for embeddings.")
             else:
-                logging.info("CUDA not available. Automatically selecting CPU for embeddings.")
+                logging.info("No GPU acceleration available. Using CPU for embeddings.")
         except ImportError:
-            logging.warning("PyTorch is not installed, defaulting to CPU. For GPU support, please install PyTorch with CUDA.")
+            logging.warning("PyTorch is not installed, defaulting to CPU. For GPU support, please install PyTorch.")
     elif device_setting in ["cuda", "gpu"]:
-        device = "cuda"
-        logging.info("Forcing GPU for embeddings based on EMBEDDING_DEVICE setting.")
+        try:
+            import torch
+            if torch.cuda.is_available():
+                device = "cuda"
+                logging.info("Forcing NVIDIA GPU for embeddings based on EMBEDDING_DEVICE setting.")
+            elif torch.backends.mps.is_available():
+                device = "mps"
+                logging.info("CUDA not available, using Apple GPU (MPS) for embeddings.")
+            else:
+                device = "cpu"
+                logging.warning("No GPU available, falling back to CPU for embeddings.")
+        except ImportError:
+            device = "cpu"
+            logging.warning("PyTorch not available, using CPU for embeddings.")
+    elif device_setting == "mps":
+        try:
+            import torch
+            if torch.backends.mps.is_available():
+                device = "mps"
+                logging.info("Forcing Apple GPU (MPS) for embeddings based on EMBEDDING_DEVICE setting.")
+            else:
+                device = "cpu"
+                logging.warning("MPS not available, falling back to CPU for embeddings.")
+        except ImportError:
+            device = "cpu"
+            logging.warning("PyTorch not available, using CPU for embeddings.")
     else:  # 'cpu' or any other value
         logging.info("Forcing CPU for embeddings based on EMBEDDING_DEVICE setting.")
 
